@@ -78,8 +78,8 @@ const ChatWidget: React.FC = () => {
     setSources([]);
 
     try {
-      // Backend URL - Hardcoded Hugging Face Space URL
-      const backendUrl = 'https://tariq761-physical-ai-rag-chatbot.hf.space';
+      // Backend URL - Hugging Face Space URL
+      const backendUrl = 'https://tariq761-physical-ai-rag-backend.hf.space';
 
       // Make the API call to Gradio respond endpoint (fn_index 0)
       const response = await fetch(`${backendUrl}/gradio_api/call/respond`, {
