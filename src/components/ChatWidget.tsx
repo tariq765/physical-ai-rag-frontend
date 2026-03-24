@@ -81,15 +81,16 @@ const ChatWidget: React.FC = () => {
       // Backend URL - Hugging Face Space URL
       const backendUrl = 'https://tariq761-physical-ai-rag-backend.hf.space';
 
-      // Make the API call to Gradio respond endpoint (fn_index 0)
-      const response = await fetch(`${backendUrl}/gradio_api/call/respond`, {
+      // Make the API call to REST API endpoint
+      const response = await fetch(`${backendUrl}/api/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          data: [messageContent, []],
-          fn_index: 0,
+          message: messageContent,
+          selected_text: selectedText || undefined,
+          conversation_id: conversationId || undefined,
         }),
       });
 
@@ -100,37 +101,15 @@ const ChatWidget: React.FC = () => {
       const result = await response.json();
 
       // Debug: Log the response
-      console.log('Gradio API Response:', result);
+      console.log('API Response:', result);
 
-      // Parse Gradio response
-      // result.data[0] = new input (empty string)
-      // result.data[1] = chat history array
-      const newInput = result.data?.[0];
-      const chatHistory = result.data?.[1] || [];
+      // Parse REST API response
+      const assistantResponse = result.response || result.answer || 'No response received';
+      const newConversationId = result.conversation_id || conversationId;
       
-      // Get the bot response from chat history
-      let assistantResponse = 'No response received';
-      
-      if (chatHistory && chatHistory.length > 0) {
-        // Try different formats
-        const lastMessage = chatHistory[chatHistory.length - 1];
-        
-        if (Array.isArray(lastMessage) && lastMessage.length >= 2) {
-          // Format: [[user_msg, bot_msg], ...]
-          assistantResponse = lastMessage[1];
-        } else if (typeof lastMessage === 'object' && lastMessage !== null) {
-          // Format: [{role, content}, ...]
-          if (lastMessage.role === 'assistant') {
-            assistantResponse = lastMessage.content || JSON.stringify(lastMessage);
-          }
-        } else if (typeof lastMessage === 'string') {
-          assistantResponse = lastMessage;
-        }
-      }
-      
-      // If still no response, try to get it from newInput
-      if (assistantResponse === 'No response received' && newInput) {
-        assistantResponse = typeof newInput === 'string' ? newInput : JSON.stringify(newInput);
+      // Update conversation ID
+      if (newConversationId) {
+        setConversationId(newConversationId);
       }
 
       // Add assistant response
@@ -141,6 +120,17 @@ const ChatWidget: React.FC = () => {
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
+
+      // Handle sources if available
+      if (result.sources && result.sources.length > 0) {
+        setSources(result.sources.map((s: any) => ({
+          chapter: s.chapter || 'Unknown',
+          section: s.section || '',
+          url: s.url || '',
+          content: s.content || '',
+          score: s.score || 0,
+        })));
+      }
 
       // Clear selected text after sending
       setSelectedText(null);
